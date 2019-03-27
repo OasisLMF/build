@@ -1,0 +1,11 @@
+version: '3.0'
+services:
+  model_tester:
+    image: ${IMAGE_WORKER}:${TAG_RUN_WORKER}
+    environment:
+     - TEST_TIMEOUT=${TEST_MAX_RUNTIME}
+    volumes:
+     - ${OASIS_MODEL_DATA_DIR}/tests/integration:/var/oasis/test
+     - ${OASIS_MODEL_DATA_DIR}/tests/data:/var/oasis/test/data
+     - ../stage/output:/var/oasis/test/output:rw
+    # - ../stage/input:/var/oasis/test/input:rw

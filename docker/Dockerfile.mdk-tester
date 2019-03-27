@@ -1,0 +1,18 @@
+FROM python:3.6
+
+WORKDIR /var/oasis
+
+RUN mkdir -p /var/log/oasis
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends unixodbc-dev libspatialindex-dev tree && \
+    apt-get install -y python-pip && \
+    rm -rf /var/lib/apt/lists/*
+RUN pip2 install subprocess32
+
+# Copy startup script + server config
+COPY ./testscript/run_model.py ./
+RUN chmod +x ./run_model.py
+
+#ENTRYPOINT ["/bin/bash", "-c", " \"$@\"", "--"]
+#CMD ["python", "run_model.py"]
+ENTRYPOINT ["/bin/bash", "-c", "python run_model.py \"$@\"", "--"]
