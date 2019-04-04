@@ -139,11 +139,15 @@ def clone_repo(repo_name, target, repo_branch='master', user_or_org_name='OasisL
     elif transfer_protocol == 'ssh':
         repo_url = 'git+{}://git@github.com/{}/{}'.format(transfer_protocol, user_or_org_name, repo_name)
 
-    options_str = '-b {} --single-branch'.format(repo_branch)
+    run_command('git clone {}'.format(repo_url))
+    os.chdir(repo_target)
+    if repo_branch[:3] == "PR-":
+        # Fetch Pull Request
+        pull_id = int(''.join(d for d in repo_branch if d.isdigit()))
+        run_command('git fetch origin pull/{}/head:{}'.format(pull_id,repo_branch))
 
-    cmd_str = 'git clone {} {}'.format(options_str, repo_url)
-    run_command(cmd_str)
-
+    # Checkout repo Branch 
+    run_command('git checkout {}'.format(repo_branch))
     os.chdir(home)
 
 
