@@ -186,15 +186,19 @@ def print_model_dir_tree(model_run_dir, options_str='-h'):
 def model_run_ok(model_run_dir, model_run_mode):
 
     def _is_non_empty_file(fp, substr_match=False, is_dir=False):
+        print(fp)
         if not substr_match:
+            print( (os.path.isfile(fp) if not is_dir else os.path.isdir(fp)) and os.path.getsize(fp) > 0 )
             return (os.path.isfile(fp) if not is_dir else os.path.isdir(fp)) and os.path.getsize(fp) > 0
         else:
             substr, dir_name, dir_contents = os.path.basename(fp), os.path.dirname(fp), os.listdir(os.path.dirname(fp))
             try:
                 fn = [fn for fn in dir_contents if substr.lower() in fn.lower()][0]
             except (AttributeError, IndexError):
+                print('False')
                 return False
             _fp = os.path.join(dir_name, fn)
+            print(os.path.getsize(_fp) > 0)
             return os.path.getsize(_fp) > 0
 
     ri = model_run_mode == 'ri'
@@ -210,17 +214,14 @@ def model_run_ok(model_run_dir, model_run_mode):
 
     direct_csv_inputs_fp = os.path.join(model_run_dir, 'input', 'csv') if not ri else os.path.join(model_run_dir, 'input')
 
-    try:
-        assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'srcexp'), substr_match=True))
-    except AssertionError:
-        assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'sourceloc'), substr_match=True))
-
+    assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'location.csv'), substr_match=True))
     assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'keys'), substr_match=True))
     assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'keys-errors'), substr_match=True))
 
     assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'items.csv')))
     assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'coverages.csv')))
     assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'gulsummaryxref.csv')))
+    assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'gul_summary_map.csv')))
 
     bin_inputs_fp = os.path.join(model_run_dir, 'input')
     assert(_is_non_empty_file(os.path.join(bin_inputs_fp, 'occurrence.bin')))
@@ -236,16 +237,13 @@ def model_run_ok(model_run_dir, model_run_mode):
     assert(_is_non_empty_file(os.path.join(outputs_fp, 'gul_S1_leccalc_full_uncertainty_oep.csv')))
 
     if model_run_mode in ['fm', 'ri']:
-        try:
-            assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'srcacc'), substr_match=True))
-        except AssertionError:
-            assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'sourceacc'), substr_match=True))
-
+        assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'account.csv'), substr_match=True))
         assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fm_programme.csv')))
         assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fm_profile.csv')))
         assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fm_policytc.csv')))
         assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fm_xref.csv')))
         assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fmsummaryxref.csv')))
+        assert(_is_non_empty_file(os.path.join(direct_csv_inputs_fp, 'fm_summary_map.csv')))
 
         assert(_is_non_empty_file(os.path.join(bin_inputs_fp, 'fm_programme.bin')))
         assert(_is_non_empty_file(os.path.join(bin_inputs_fp, 'fm_profile.bin')))
