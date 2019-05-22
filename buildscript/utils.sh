@@ -42,7 +42,6 @@ build_image(){
     docker-check-tag $IMAGE_NAME $RELEASE_TAG && exit 1
     docker build  --no-cache=true\
                  -t $IMAGE_NAME:${RELEASE_TAG}\
-                 -t $IMAGE_NAME:latest\
                  -f $DOCKER_FILE .
 }
 
@@ -50,6 +49,10 @@ build_image(){
 push_image() {
     local IMAGE_NAME=$1
     local RELEASE_TAG=$2
+
+    # tag image for push as latest 
+    docker tag $IMAGE_NAME:$RELEASE_TAG $IMAGE_NAME:latest
+    # Push both tags to docker hub
     docker push $IMAGE_NAME:$RELEASE_TAG
     docker push $IMAGE_NAME:latest
 }
