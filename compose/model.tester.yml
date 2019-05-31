@@ -5,6 +5,6 @@ services:
     environment:
      - TEST_TIMEOUT=${TEST_MAX_RUNTIME}
     volumes:
-     - ${TEST_DATA_DIR}/tests:/var/oasis/test
+     - ${TEST_DATA_DIR}:/var/oasis/test
      - ../stage/output:/var/oasis/test/output:rw
     # - ../stage/input:/var/oasis/test/input:rw
