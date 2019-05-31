@@ -5,7 +5,6 @@ services:
     environment:
      - TEST_TIMEOUT=${TEST_MAX_RUNTIME}
     volumes:
-     - ${OASIS_MODEL_DATA_DIR}/tests/integration:/var/oasis/test
-     - ${OASIS_MODEL_DATA_DIR}/tests/data:/var/oasis/test/data
+     - ${TEST_DATA_DIR}/tests:/var/oasis/test
      - ../stage/output:/var/oasis/test/output:rw
     # - ../stage/input:/var/oasis/test/input:rw
