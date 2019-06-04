@@ -12,7 +12,6 @@ pipeline_print_funcs(){
 print_model_vars(){
     set +eux
     printf ' ---- Shell Build Variables ----------- \n' 
-    printf "export TAG_BASE=$TAG_BASE\n" 
     printf "export TAG_RELEASE=$TAG_RELEASE\n"
     printf "export TAG_RUN_PLATFORM=$TAG_RUN_PLATFORM\n"
     printf "export TAG_RUN_WORKER=$TAG_RUN_WORKER\n"
@@ -24,6 +23,7 @@ print_model_vars(){
     printf "export MODEL_ID=$MODEL_ID\n"
     printf "export TEST_MAX_RUNTIME=$TEST_MAX_RUNTIME\n"
 
+    printf "export TEST_DATA_DIR=$TEST_DATA_DIR\n"
     printf "export OASIS_MODEL_DATA_DIR=$OASIS_MODEL_DATA_DIR\n"
     printf "export COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME\n"
 
