@@ -1,0 +1,5 @@
+FROM coreoasis/model_worker:latest
+
+ARG BRANCH=develop
+RUN pip3 uninstall oasislmf -y
+RUN pip3 install -e git+https://git@github.com/OasisLMF/OasisLMF.git@${BRANCH:-develop}#egg=oasislmf
