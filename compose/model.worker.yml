@@ -21,5 +21,5 @@ services:
      - OASIS_CELERY_DB_PORT=3306
     volumes:
 #     - ./log:/var/log/oasis:rw
-     - ${OASIS_MODEL_DATA_DIR:-./data/static}:${MODEL_MOUNT_TARGET:-./var/oasis}:rw
+     - ${OASIS_MODEL_DATA_DIR:-./data/static}:${MODEL_MOUNT_TARGET:-/var/oasis}:rw
      - ${OASIS_MEDIA_ROOT:-./docker-shared-fs}:/shared-fs:rw
