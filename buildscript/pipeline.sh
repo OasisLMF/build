@@ -26,6 +26,7 @@ print_model_vars(){
     printf "export TEST_DATA_DIR=$TEST_DATA_DIR\n"
     printf "export OASIS_MODEL_DATA_DIR=$OASIS_MODEL_DATA_DIR\n"
     printf "export OASIS_MODEL_REPO_DIR=$OASIS_MODEL_REPO_DIR\n"
+    printf "export MODEL_MOUNT_TARGET=$MODEL_MOUNT_TARGET\n"
     printf "export COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME\n"
 
     #printf "export VERS_KEYS_DATA=$VERS_KEYS_DATA\n"
