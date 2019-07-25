@@ -145,10 +145,14 @@ run_ui(){
 sign_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${TAR_PKG}"
+    WHL_PKG=$(find ./dist/ -name "oasislmf-*.whl")
+    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_PKG}"
 }
 push_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     /usr/local/bin/twine upload $TAR_PKG $TAR_PKG.asc
+    WHL_PKG=$(find ./dist/ -name "oasislmf-*.whl")
+    /usr/local/bin/twine upload $WHL_PKG $WHL_PKG.asc
 }
 set_vers_oasislmf(){
     OASISLMF_VERS=$1
