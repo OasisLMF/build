@@ -128,9 +128,15 @@ run_mdk(){
 
 ## new generic version 
 run_test(){
+    # Default timeout of 8h
+    timeout_val=28800 
+    if [ $# -gt 0 ]; then
+        local timeout_val=$1
+    fi    
+
     local tester=' -f compose/model.tester.yml'
     eval $(compose_model)${tester}' up -d'
-    bash -c $(compose_oasis)$tester' logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
+    timeout $timeout_val bash -c $(compose_oasis)$tester' logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
     eval $(compose_model)${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest '"$@"'"'
 }
 
@@ -145,14 +151,20 @@ run_ui(){
 sign_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${TAR_PKG}"
-    WHL_PKG=$(find ./dist/ -name "oasislmf-*.whl")
-    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_PKG}"
+
+    WHL_LIST=( $(find ./dist/ -name "oasislmf-*.whl"))
+    for whl in "${WHL_LIST[@]}"; do
+        bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a $whl"
+    done
 }
 push_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     /usr/local/bin/twine upload $TAR_PKG $TAR_PKG.asc
-    WHL_PKG=$(find ./dist/ -name "oasislmf-*.whl")
-    /usr/local/bin/twine upload $WHL_PKG $WHL_PKG.asc
+    
+    WHL_LIST=( $(find ./dist/ -name "oasislmf-*.whl"))
+    for whl in "${WHL_LIST[@]}"; do
+        /usr/local/bin/twine upload $whl $whl.asc
+    done
 }
 set_vers_oasislmf(){
     OASISLMF_VERS=$1
