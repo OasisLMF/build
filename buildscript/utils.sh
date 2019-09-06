@@ -150,7 +150,7 @@ sign_oasislmf(){
 
     WHL_LIST=( $(find ./dist/ -name "oasislmf-*.whl"))
     for whl in "${WHL_LIST[@]}"; do
-        bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a $whl"
+        bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${whl}"
     done
 }
 push_oasislmf(){
