@@ -148,10 +148,11 @@ sign_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${TAR_PKG}"
 
-    WHL_LIST=( $(find ./dist/ -name "oasislmf-*.whl"))
-    for whl in "${WHL_LIST[@]}"; do
-        bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${whl}"
-    done
+    WHL_LINUX=$(find ./dist/ -name "oasislmf-*manylinux1_x86_64.whl")
+    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_LINUX}"
+
+    WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
+    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_OSX}"
 }
 push_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
