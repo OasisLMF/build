@@ -19,6 +19,8 @@ services:
      - OASIS_CELERY_DB_USER=celery
      - OASIS_CELERY_DB_NAME=celery
      - OASIS_CELERY_DB_PORT=3306
+     - OASIS_KEEP_RUN_DIR=True
+     - OASIS_DEBUG_MODE=True
     volumes:
 #     - ./log:/var/log/oasis:rw
      - ${OASIS_MODEL_DATA_DIR:-./data/static}:${MODEL_MOUNT_TARGET:-/var/oasis}:rw
