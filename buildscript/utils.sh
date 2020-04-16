@@ -25,9 +25,30 @@ git_tag(){
     fi
 }
 
-prev_vers(){
-    cat $1 | grep \` -m 1 | awk -F "\`" 'NR==1 {print $2}'
-}    
+#prev_vers(){
+#    cat $1 | grep \` -m 1 | awk -F "\`" 'NR==1 {print $2}'
+#}    
+
+create_milestone(){
+    local TOKEN=$1
+    local REPO=$2
+    local RELEASE_ID=$3
+    local CHANGELOG_PATH=$4
+    
+    ## extract issue numbers from changelog  
+    ISSUES_LIST=($(sed '/end_latest_release/q' $CHANGELOG_PATH | grep -o '#[0-9]\+' | awk -F'[^0-9]*' '$0=$2'))
+
+    ## Create milestone
+    curl -s -H "Authorization:token $TOKEN" -X POST -d '{"title": "'$RELEASE_ID'"}' https://api.github.com/repos/$REPO/milestones > milestone_response.json
+    MILESTONE_ID=$(jq -r '.number' < milestone_response.json)
+
+    ## add issues to milestone
+    for i in "${ISSUES_LIST[@]}"; do
+        echo "Add Issue #$i to milestone ($RELEASE_ID)"
+        curl -s -H "Authorization:token $TOKEN" -X PATCH -d '{"milestone": '$MILESTONE_ID'}' https://api.github.com/repos/$REPO/issues/$i > "${i}_issue_response.json"
+    done
+}
+
 
 build_image(){
     local DOCKER_FILE=$1
