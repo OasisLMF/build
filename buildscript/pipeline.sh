@@ -45,7 +45,7 @@ pipeline is a wrapper for building environments for the OASIS build pipeline.
 Functions are defined bash files and loaded using the PATH syntax
 
 Example:
-  export PIPELINE_LOAD="./catrisks.sh:./build-oasis-api.sh"
+  export PIPELINE_LOAD='/path/to/utils.sh'
   ./pipeline.sh <defined_function>
 
 Usage:
@@ -59,20 +59,10 @@ pipeline_print_funcs
 
 pipeline_load(){
     # This function selectively sources scripts based on the env var below
-    # export PIPELINE_LOAD='/path/to/catrisk.sh:/path/to/flamingo.sh'
+    # export PIPELINE_LOAD='/path/to/utils.sh'
 
     if [ -n "$PIPELINE_LOAD" ]; then 
-        #Set delimiter & load array
-        IFS=':'; set -f
-        scripts_array=($PIPELINE_LOAD)
-
-        # Iterate over array and source scripts
-        for script in "${scripts_array[@]}"
-        do  
-            echo "Loading: " $script
-            source $script
-        done
-	IFS="$oIFS"
+        source $PIPELINE_LOAD
     else    
         echo "Error: '\$PIPELINE_LOAD' is not set"
         echo
