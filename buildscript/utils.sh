@@ -34,21 +34,26 @@ create_milestone(){
     local REPO=$2
     local RELEASE_ID=$3
     local CHANGELOG_PATH=$4
-    
-    ## extract issue numbers from changelog  
+
+    env
+
+    ## extract issue numbers from changelog
     ISSUES_LIST=($(sed '/end_latest_release/q' $CHANGELOG_PATH | grep -o '#[0-9]\+' | awk -F'[^0-9]*' '$0=$2'))
 
     ## Create milestone
-    curl -s -H "Authorization:token $TOKEN" -X POST -d '{"title": "'$RELEASE_ID'"}' https://api.github.com/repos/$REPO/milestones > milestone_response.json
-    MILESTONE_ID=$(jq -r '.number' < milestone_response.json)
+    MILESTONE_ID=$(curl -s -H "Authorization:token $TOKEN" -X GET https://api.github.com/repos/OasisLMF/OasisLMF/milestones | jq ".[]  | select(.title == \"$RELEASE_ID\") | .number ")
+    if [ -z "$MILESTONE_ID" ]; then
+            curl -s -H "Authorization:token $TOKEN" -X POST -d '{"title": "'$RELEASE_ID'"}' https://api.github.com/repos/$REPO/milestones > milestone_response.json
+            MILESTONE_ID=$(jq -r '.number' < milestone_response.json)
+    fi
 
     ## add issues to milestone
-    for i in "${ISSUES_LIST[@]}"; do
+    for i in "${ISSUES_LIST[@]}"
+    do
         echo "Add Issue #$i to milestone ($RELEASE_ID)"
         curl -s -H "Authorization:token $TOKEN" -X PATCH -d '{"milestone": '$MILESTONE_ID'}' https://api.github.com/repos/$REPO/issues/$i > "${i}_issue_response.json"
     done
 }
-
 
 build_image(){
     local DOCKER_FILE=$1
