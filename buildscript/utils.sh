@@ -41,7 +41,7 @@ create_milestone(){
     ISSUES_LIST=($(sed '/end_latest_release/q' $CHANGELOG_PATH | grep -o '#[0-9]\+' | awk -F'[^0-9]*' '$0=$2'))
 
     ## Create milestone
-    MILESTONE_ID=$(curl -s -H "Authorization:token $TOKEN" -X GET https://api.github.com/repos/OasisLMF/OasisLMF/milestones | jq ".[]  | select(.title == \"$RELEASE_ID\") | .number ")
+    MILESTONE_ID=$(curl -s -H "Authorization:token $TOKEN" -X GET https://api.github.com/repos/$REPO/milestones | jq ".[]  | select(.title == \"$RELEASE_ID\") | .number ")
     if [ -z "$MILESTONE_ID" ]; then
             curl -s -H "Authorization:token $TOKEN" -X POST -d '{"title": "'$RELEASE_ID'"}' https://api.github.com/repos/$REPO/milestones > milestone_response.json
             MILESTONE_ID=$(jq -r '.number' < milestone_response.json)
