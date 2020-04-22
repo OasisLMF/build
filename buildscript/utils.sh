@@ -158,7 +158,7 @@ run_test(){
     timeout_val=28800 
     local tester=' -f compose/model.tester.yml'
     eval $(compose_model)${tester}' up -d'
-    bash -c $(compose_oasis)$tester' logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
+    bash -c \'$(compose_oasis)$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
     eval "timeout $timeout_val "$(compose_model)${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest '"$@"'"'
 }
 
