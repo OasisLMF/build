@@ -128,6 +128,22 @@ stop_model(){
     eval $(compose_model)' down -v || true'
 }
 
+
+start_model_s3(){
+    eval 'docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml up -d'
+}
+stop_model_s3(){
+    eval 'docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml down -v || true'
+}
+run_test_s3(){
+    # Default timeout of 8h
+    timeout_val=28800 
+    local tester='docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml -f compose/model.tester.yml'
+    eval ${tester}' up -d'
+    bash -c '''$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
+    eval "timeout $timeout_val "${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest '"$@"'"'
+}
+
 # stop all containers matching RegEx
 stop_docker(){
     uuid=$1
