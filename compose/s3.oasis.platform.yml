@@ -4,6 +4,7 @@ services:
     image: localstack/localstack:0.11.0
     environment:
       - SERVICES=s3
+      - HOSTNAME=localhost  
     ports:
       - "4567-4599:4567-4599"
     volumes:
