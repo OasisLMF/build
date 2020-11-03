@@ -141,7 +141,7 @@ run_test_s3(){
     local tester='docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml -f compose/model.tester.yml'
     eval ${tester}' up -d'
     bash -c '''$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
-    eval "timeout $timeout_val "${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest '"$@"'"'
+    eval "timeout $timeout_val "${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest_S3 '"$@"'"'
 }
 
 # stop all containers matching RegEx
