@@ -25,7 +25,7 @@ services:
      - OASIS_DEBUG_MODE=True
     volumes:
 #     - ./log:/var/log/oasis:rw
-     - ${OASIS_MODEL_REPO_DIR}:/var/oasis/:rw
+     - ${OASIS_MODEL_REPO_DIR}:/home/worker/model/:rw
      - ${OASIS_MODEL_DATA_DIR}:/var/oasis/model_data/:rw
      - ${OASIS_KEYS_DATA_DIR}:/var/oasis/keys_data/:rw
      - ${OASIS_MEDIA_ROOT:-./docker-shared-fs}:/shared-fs:rw
