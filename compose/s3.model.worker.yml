@@ -22,6 +22,7 @@ services:
      - OASIS_CELERY_DB_PORT=3306
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
+     - OASIS_OASISLMF_CONFIG=${MDK_CONFIG}  
      - OASIS_STORAGE_TYPE=S3
      - OASIS_AWS_BUCKET_NAME=example-bucket 
      - OASIS_AWS_ACCESS_KEY_ID=foobar
