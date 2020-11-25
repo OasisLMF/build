@@ -21,6 +21,7 @@ services:
      - OASIS_CELERY_DB_NAME=celery
      - OASIS_CELERY_DB_PORT=3306
      - OASIS_OASISLMF_CONFIG=${MDK_CONFIG}  
+     - OASIS_MODEL_DATA_DIRECTORY=/home/worker/model/  
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
     volumes:
