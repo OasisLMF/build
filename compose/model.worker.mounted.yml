@@ -20,12 +20,13 @@ services:
      - OASIS_CELERY_DB_USER=celery
      - OASIS_CELERY_DB_NAME=celery
      - OASIS_CELERY_DB_PORT=3306
-     - OASIS_oasislmf_config=${MDK_CONFIG}  
+     - OASIS_MODEL_DATA_DIRECTORY=/home/worker/model/  
+     - OASIS_OASISLMF_CONFIG=${MDK_CONFIG}  
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
     volumes:
 #     - ./log:/var/log/oasis:rw
-     - ${OASIS_MODEL_REPO_DIR}:/var/oasis/:rw
+     - ${OASIS_MODEL_REPO_DIR}:/home/worker/model/:rw
      - ${OASIS_MODEL_DATA_DIR}:/var/oasis/model_data/:rw
      - ${OASIS_KEYS_DATA_DIR}:/var/oasis/keys_data/:rw
      - ${OASIS_MEDIA_ROOT:-./docker-shared-fs}:/shared-fs:rw

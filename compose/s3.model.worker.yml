@@ -22,7 +22,8 @@ services:
      - OASIS_CELERY_DB_PORT=3306
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
-     - OASIS_KTOOLS_ALLOC_RULE_GUL=${MULTI_PERIL:-0}
+     - OASIS_OASISLMF_CONFIG=${MDK_CONFIG}  
+     - OASIS_MODEL_DATA_DIRECTORY=/home/worker/model/  
      - OASIS_STORAGE_TYPE=S3
      - OASIS_AWS_BUCKET_NAME=example-bucket 
      - OASIS_AWS_ACCESS_KEY_ID=foobar
@@ -30,4 +31,4 @@ services:
      - OASIS_AWS_S3_ENDPOINT_URL=http://localstack-s3:4572
     volumes:
 #     - ./log:/var/log/oasis:rw
-     - ${OASIS_MODEL_DATA_DIR:-./data/static}:${MODEL_MOUNT_TARGET:-/var/oasis}:rw
+     - ${OASIS_MODEL_DATA_DIR:-./data/static}:${MODEL_MOUNT_TARGET:-/home/worker/model}:rw
