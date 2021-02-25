@@ -193,8 +193,8 @@ sign_oasislmf(){
     WHL_LINUX=$(find ./dist/ -name "oasislmf-*manylinux1_x86_64.whl")
     bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_LINUX}"
 
-    WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
-    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_OSX}"
+    #WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
+    #bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_OSX}"
 }
 push_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
@@ -203,8 +203,8 @@ push_oasislmf(){
     WHL_LINUX=$(find ./dist/ -name "oasislmf-*manylinux1_x86_64.whl")
     /usr/local/bin/twine upload $WHL_LINUX $WHL_LINUX.asc
 
-    WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
-    /usr/local/bin/twine upload $WHL_OSX $WHL_OSX.asc
+    #WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
+    #/usr/local/bin/twine upload $WHL_OSX $WHL_OSX.asc
 }
 set_vers_oasislmf(){
     OASISLMF_VERS=$1
