@@ -39,6 +39,10 @@ create_milestone(){
 
     ## extract issue numbers from changelog
     ISSUES_LIST=($(sed '/end_latest_release/q' $CHANGELOG_PATH | grep -o '#[0-9]\+' | awk -F'[^0-9]*' '$0=$2'))
+    if [ ${#ISSUES_LIST[@]} -eq 0 ]; then
+        echo "No issues found in changelog '${CHANGELOG_PATH}'"
+        exit 0
+    fi 
 
     ## Create milestone
     MILESTONE_ID=$(curl -s -H "Authorization:token $TOKEN" -X GET https://api.github.com/repos/$REPO/milestones | jq ".[]  | select(.title == \"$RELEASE_ID\") | .number ")
