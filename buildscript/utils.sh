@@ -84,7 +84,6 @@ push_image() {
     docker tag $IMAGE_NAME:$RELEASE_TAG $IMAGE_NAME:latest
     # Push both tags to docker hub
     docker push $IMAGE_NAME:$RELEASE_TAG
-    docker push $IMAGE_NAME:latest
 }
 # purge-image $IMAGE_NAME $RELEASE_TAG
 purge_image(){
