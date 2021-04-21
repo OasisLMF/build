@@ -27,7 +27,7 @@ git_tag(){
 
 #prev_vers(){
 #    cat $1 | grep \` -m 1 | awk -F "\`" 'NR==1 {print $2}'
-#}    
+#}
 
 create_milestone(){
     local TOKEN=$1
@@ -37,12 +37,22 @@ create_milestone(){
 
     env
 
+    ## Check milestone tags are correctly set
+    if [ ! $(grep -c start_latest_release $CHANGELOG_PATH ) -eq 1 ]; then
+        echo 'CHANGELOG missing tag "start_latest_release"'
+        exit 0
+    fi
+    if [ ! $(grep -c end_latest_release $CHANGELOG_PATH ) -eq 1 ]; then
+        echo 'CHANGELOG missing tag "end_latest_release"'
+        exit 0
+    fi
+
     ## extract issue numbers from changelog
     ISSUES_LIST=($(sed '/end_latest_release/q' $CHANGELOG_PATH | grep -o '#[0-9]\+' | awk -F'[^0-9]*' '$0=$2'))
     if [ ${#ISSUES_LIST[@]} -eq 0 ]; then
         echo "No issues found in changelog '${CHANGELOG_PATH}'"
         exit 0
-    fi 
+    fi
 
     ## Create milestone
     MILESTONE_ID=$(curl -s -H "Authorization:token $TOKEN" -X GET https://api.github.com/repos/$REPO/milestones | jq ".[]  | select(.title == \"$RELEASE_ID\") | .number ")
@@ -80,7 +90,7 @@ push_image() {
     local IMAGE_NAME=$1
     local RELEASE_TAG=$2
 
-    # tag image for push as latest 
+    # tag image for push as latest
     docker tag $IMAGE_NAME:$RELEASE_TAG $IMAGE_NAME:latest
     # Push both tags to docker hub
     docker push $IMAGE_NAME:$RELEASE_TAG
@@ -140,7 +150,7 @@ stop_model_s3(){
 }
 run_test_s3(){
     # Default timeout of 8h
-    timeout_val=28800 
+    timeout_val=28800
     local tester='docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml -f compose/model.tester.yml'
     eval ${tester}' up -d'
     bash -c '''$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
@@ -171,10 +181,10 @@ run_mdk(){
 }
 
 
-## new generic version 
+## new generic version
 run_test(){
     # Default timeout of 8h
-    timeout_val=28800 
+    timeout_val=28800
     local tester=' -f compose/model.tester.yml'
     eval $(compose_model)${tester}' up -d'
     bash -c '''$(compose_oasis)$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
@@ -202,7 +212,7 @@ sign_oasislmf(){
 push_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
     /usr/local/bin/twine upload $TAR_PKG $TAR_PKG.asc
-    
+
     WHL_LINUX=$(find ./dist/ -name "oasislmf-*manylinux1_x86_64.whl")
     /usr/local/bin/twine upload $WHL_LINUX $WHL_LINUX.asc
 
