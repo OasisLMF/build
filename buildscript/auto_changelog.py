@@ -9,7 +9,10 @@ import requests
 
 from bs4 import BeautifulSoup
 from github import Github, UnknownObjectException
-from pydriller import RepositoryMining
+try:
+    from pydriller import RepositoryMining
+except:
+    from pydriller import Repository as RepositoryMining
 logging.basicConfig(level=logging.INFO)
 
 
@@ -19,7 +22,7 @@ class ReleaseNotesBuilder(object):
     https://gitpython.readthedocs.io/en/stable/tutorial.html  -- base class used in pydriller
     https://github.com/ishepard/pydriller                     -- analysze git repo
     https://github.com/PyGithub/PyGithub                      -- fetch github data/metadata
-    https://click.palletsprojects.com/en/7.x/                 -- cli options 
+    https://click.palletsprojects.com/en/7.x/                 -- cli options
 
     ## install requirments
     'pip install github pydriller click'
@@ -83,12 +86,14 @@ class ReleaseNotesBuilder(object):
 
     def _get_tag(self, repo_name, idx=0):
         resp = requests.get(f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags')
+        resp.raise_for_status()
         if resp.ok:
             tag_data = json.loads(resp.text)
             return tag_data[idx]['name']
 
     def _get_all_tags(self, repo_name):
         resp = requests.get(f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags')
+        resp.raise_for_status()
         if resp.ok:
             tag_data = json.loads(resp.text)
             return [tag.get('name')for tag in tag_data]
@@ -225,7 +230,7 @@ class ReleaseNotesBuilder(object):
         START = '<!--start_release_notes-->\r\n'
         END = '<!--end_release_notes-->'
         release_note_content = []
-        has_content = False    
+        has_content = False
 
         if github_data:
             for pr in github_data.get('pull_requests'):
@@ -241,8 +246,8 @@ class ReleaseNotesBuilder(object):
                 if len(release_desc.strip()) < 1:
                     # skip PR if tags contain an empty string
                     continue
-                release_note_content.append(release_desc)    
-                has_content = True    
+                release_note_content.append(release_desc)
+                has_content = True
 
         return has_content, release_note_content
 
@@ -258,7 +263,7 @@ class ReleaseNotesBuilder(object):
             tag_oasisui=oasisui_data.get('tag_to'),
         )
         for repo in [platform_data, oasislmf_data, ktools_data]:
-            has_notes, pr_notes = self.extract_pr_content(repo) 
+            has_notes, pr_notes = self.extract_pr_content(repo)
             if has_notes:
                 release_notes.append('## {} Notes\r\n'.format(repo.get('name')))
                 release_notes += pr_notes + ['\r\n']
@@ -285,13 +290,13 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path):
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
     tag_list = noteBuilder._get_all_tags(repo)
 
-    # check tags are valid 
+    # check tags are valid
     if from_tag not in tag_list:
-        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository")
+        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
     if to_tag not in tag_list:
-        raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository")
+        raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository, \nValid options: {tag_list}")
 
-    # Create changelog 
+    # Create changelog
     repo_data = noteBuilder.load_data(repo_name=repo, tag_from=from_tag, tag_to=to_tag)
     changelog_data =  noteBuilder.create_changelog(repo_data)
     changelog_path = os.path.abspath(output_path)
@@ -299,14 +304,14 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path):
     mode = 'r+' if os.path.isfile(changelog_path) else 'w+'
     with open(changelog_path, mode) as cl:
         text = cl.readlines()
-        
-        if len(text) > 3: 
+
+        if len(text) > 3:
             # Appending to existing file
             cl.seek(0)
             cl.writelines(text[:3] + changelog_data + text[3:])
             logger.info(f'Appended Changelog data to: "{changelog_path}"')
         else:
-            # new file or stub 
+            # new file or stub
             cl.seek(0)
             header = [f'{repo} Changelog\n']
             header.append( (len(header[0])-1) * '='+'\n')
@@ -335,19 +340,19 @@ def build_release_notes(platform_from_tag,
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
     plat_from   = platform_from_tag if platform_from_tag else noteBuilder._get_tag(repo_name='OasisPlatform', idx=1)
-    plat_to     = platform_to_tag if platform_to_tag     else noteBuilder._get_tag(repo_name='OasisPlatform', idx=0) 
-    lmf_from    = lmf_from_tag if lmf_from_tag           else noteBuilder._get_tag(repo_name='OasisLMF', idx=1) 
-    lmf_to      = lmf_to_tag if lmf_to_tag               else noteBuilder._get_tag(repo_name='OasisLMF', idx=0) 
-    ktools_from = ktools_from_tag if ktools_from_tag     else noteBuilder._get_tag(repo_name='ktools', idx=1) 
-    ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0) 
+    plat_to     = platform_to_tag if platform_to_tag     else noteBuilder._get_tag(repo_name='OasisPlatform', idx=0)
+    lmf_from    = lmf_from_tag if lmf_from_tag           else noteBuilder._get_tag(repo_name='OasisLMF', idx=1)
+    lmf_to      = lmf_to_tag if lmf_to_tag               else noteBuilder._get_tag(repo_name='OasisLMF', idx=0)
+    ktools_from = ktools_from_tag if ktools_from_tag     else noteBuilder._get_tag(repo_name='ktools', idx=1)
+    ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0)
 
     plat_data = noteBuilder.load_data(repo_name='OasisPlatform', tag_from=plat_from, tag_to=plat_to)
     lmf_data = noteBuilder.load_data(repo_name='OasisLMF',       tag_from=lmf_from, tag_to=lmf_to)
     ktools_data = noteBuilder.load_data(repo_name='ktools',      tag_from=ktools_from, tag_to=ktools_to)
 
     release_notes_data = noteBuilder.create_release_notes(
-        platform_data=plat_data, 
-        oasislmf_data=lmf_data, 
+        platform_data=plat_data,
+        oasislmf_data=lmf_data,
         ktools_data=ktools_data)
 
     release_notes_path = os.path.abspath(output_path)
