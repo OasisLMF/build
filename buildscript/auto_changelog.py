@@ -32,6 +32,10 @@ class ReleaseNotesBuilder(object):
         self.github_user = github_user
         self.logger = logging.getLogger()
 
+        if github_token:
+            self.gh_headers = {'Authorization': f'token {self.github_token}'}
+        else:
+            self.gh_headers = {}
 
     def _get_commit_refs(self, repo_url, from_tag, to_tag):
         """ find all commits between the two tags [`tag_start` .. `tag_end`]
@@ -84,15 +88,29 @@ class ReleaseNotesBuilder(object):
         return set(map(int, issue_refs))
 
 
+    def _check_gh_rate_limit(self):
+        resp = requests.get(
+            'https://api.github.com/rate_limit',
+            headers=self.gh_headers)
+        resp.raise_for_status()
+        return resp.json()
+
+
     def _get_tag(self, repo_name, idx=0):
-        resp = requests.get(f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags')
+        resp = requests.get(
+            f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags',
+            headers=self.gh_headers)
+
         resp.raise_for_status()
         if resp.ok:
             tag_data = json.loads(resp.text)
             return tag_data[idx]['name']
 
     def _get_all_tags(self, repo_name):
-        resp = requests.get(f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags')
+        resp = requests.get(
+            f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags',
+            headers=self.gh_headers)
+
         resp.raise_for_status()
         if resp.ok:
             tag_data = json.loads(resp.text)
@@ -279,6 +297,14 @@ def cli():
 
 
 @cli.command()
+@click.option('--github-token', default=None, help='Github OAuth token')
+def check_rate_limit(github_token):
+    logger = logging.getLogger()
+    noteBuilder = ReleaseNotesBuilder(github_token=github_token)
+    rate_limit_info = noteBuilder._check_gh_rate_limit()
+    logger.info(json.dumps(rate_limit_info, indent=4))
+
+@cli.command()
 @click.option('--repo',         type=click.Choice(['ktools', 'OasisLMF', 'OasisPlatform', 'OasisUI'], case_sensitive=True), required=True)
 @click.option('--output-path',  type=click.Path(exists=False), default='./CHANGELOG.rst', help='changelog output path')
 @click.option('--from-tag',     required=True, help='Github tag to track changes from' )
@@ -288,6 +314,8 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path):
     # Setup
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
+
+    noteBuilder._check_gh_rate_limit()
     tag_list = noteBuilder._get_all_tags(repo)
 
     # check tags are valid
