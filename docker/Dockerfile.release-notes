@@ -4,4 +4,5 @@ COPY ./buildscript/requirments_changelog.txt ./requirements.txt
 COPY ./buildscript/auto_changelog.py /usr/local/bin
 
 RUN pip3 install -r requirements.txt
+WORKDIR /tmp
 ENTRYPOINT ["/bin/bash", "-c", "auto_changelog.py \"$@\"", "--"]
