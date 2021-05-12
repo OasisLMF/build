@@ -116,6 +116,20 @@ class ReleaseNotesBuilder(object):
             tag_data = json.loads(resp.text)
             return [tag.get('name')for tag in tag_data]
 
+    def _find_milestone(self, repo_name, title):
+        """ return milestone number if title matches, return '-1' if not found
+        """
+        resp = requests.get(
+            f'https://api.github.com/repos/{self.github_user}/{repo_name}/milestones',
+            headers=self.gh_headers)
+
+        resp.raise_for_status()
+        if resp.ok:
+            for milestone in resp.json():
+                if milestone.get('title') == title:
+                    return milestone.get('number')
+            return -1
+
 
     def load_data(self, repo_name, tag_from=None, tag_to=None):
         """
@@ -174,6 +188,27 @@ class ReleaseNotesBuilder(object):
             "pull_requests": pull_requests
         }
 
+    def create_milestones(self, github_data):
+        # Load repository data (is needed?)
+        repo_name = github_data.get('name')
+        github = Github(login_or_token=self.github_token).get_repo(f'{self.github_user}/{repo_name}')
+        milestone_title = github_data.get('tag_to')
+        milestone_num = self._find_milestone(github_data.get('name'), milestone_title)
+
+        # Get or Create milestone
+        if milestone_num < 0:
+            milestone = github.create_milestone(milestone_title)
+        else:
+            milestone = github.get_milestone(milestone_num)
+
+        # Assgin pull requesuts/issues to milestone
+        for pr in github_data.get('pull_requests'):
+            pull_request = pr.get('pull_request')
+            pull_request.as_issue().edit(milestone=milestone)
+            self.logger.info(f'PR-{pull_request.number}, added to milestone "{milestone.title}"')
+            for issue in pr.get('linked_issues'):
+                issue.edit(milestone=milestone)
+                self.logger.info(f'Issue #{issue.number}, added to milestone "{milestone.title}"')
 
     def create_changelog(self, github_data):
         changelog_lines = []
@@ -310,12 +345,11 @@ def check_rate_limit(github_token):
 @click.option('--from-tag',     required=True, help='Github tag to track changes from' )
 @click.option('--to-tag',       required=True, help='Github tag to track changes to')
 @click.option('--github-token', default=None, help='Github OAuth token')
-def build_changelog(repo, from_tag, to_tag, github_token, output_path):
+@click.option('--apply-milestone', is_flag=True, help='Add issues to Github milestone, (requires Github OAuth token)')
+def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_milestone):
     # Setup
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
-
-    noteBuilder._check_gh_rate_limit()
     tag_list = noteBuilder._get_all_tags(repo)
 
     # check tags are valid
@@ -328,6 +362,10 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path):
     repo_data = noteBuilder.load_data(repo_name=repo, tag_from=from_tag, tag_to=to_tag)
     changelog_data =  noteBuilder.create_changelog(repo_data)
     changelog_path = os.path.abspath(output_path)
+
+    # Add milestones
+    if apply_milestone:
+        noteBuilder.create_milestones(repo_data)
 
     mode = 'r+' if os.path.isfile(changelog_path) else 'w+'
     with open(changelog_path, mode) as cl:
