@@ -234,10 +234,22 @@ class ReleaseNotesBuilder(object):
                 issue.edit(milestone=milestone)
                 self.logger.info(f'Issue #{issue.number}, added to milestone "{milestone.title}"')
 
-    def create_changelog(self, github_data):
+    def create_changelog(self, github_data, format_markdown=False):
+        """ Extract Changelog data from github info `see self.load_data()`
+
+            `format_markdown`: format as markdown for release notes 
+        """
         changelog_lines = []
-        changelog_lines.append('`{}`_'.format(github_data['tag_to']))
-        changelog_lines.append(' ---------')
+        if format_markdown:
+            changelog_lines.append('## [{} - changelog]({}/compare/{}...{})'.format(
+                github_data['tag_to'],
+                github_data["url"],
+                github_data['tag_from'],
+                github_data['tag_to']))
+        else:    
+            # Add RST style header
+            changelog_lines.append('`{}`_'.format(github_data['tag_to']))
+            changelog_lines.append(' ---------')
 
         # Check that at least one Pull request has been picked up
         for pr in github_data['pull_requests']:
@@ -264,16 +276,17 @@ class ReleaseNotesBuilder(object):
                     pr['pull_request'].title
                 ))
 
-        changelog_lines.append(".. _`{}`:  {}/compare/{}...{}".format(
-            github_data['tag_to'],
-            github_data["url"],
-            github_data['tag_from'],
-            github_data['tag_to'],
-        ))
+        if not format_markdown:
+            # Add RST github compare link 
+            changelog_lines.append(".. _`{}`:  {}/compare/{}...{}".format(
+                github_data['tag_to'],
+                github_data["url"],
+                github_data['tag_from'],
+                github_data['tag_to'],
+            ))
         changelog_lines.append("")
 
         changelog_lines = list(map(lambda l: l + "\n", changelog_lines))
-        self.logger.info("CHANGELOG OUTPUT: \n" +  "".join(changelog_lines))
         return changelog_lines
 
     def release_plat_header(self, tag_platform=None, tag_oasislmf=None, tag_oasisui=None, tag_ktools=None):
@@ -387,8 +400,9 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
 
     # Create changelog
     repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
-    changelog_data =  noteBuilder.create_changelog(repo_data)
+    changelog_data = noteBuilder.create_changelog(repo_data)
     changelog_path = os.path.abspath(output_path)
+    logger.info("CHANGELOG OUTPUT: \n" +  "".join(changelog_data))
 
     # Add milestones
     if apply_milestone:
@@ -420,8 +434,38 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
 @click.option('--from-tag',     required=True, help='Github tag to track changes from' )
 @click.option('--to-tag',       required=True, help='Github tag to track changes to')
 @click.option('--github-token', default=None, help='Github OAuth token')
-def build_release():
-    pass
+def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_path):
+    logger = logging.getLogger()
+    noteBuilder = ReleaseNotesBuilder(github_token=github_token)
+    tag_list = noteBuilder._get_all_tags(repo)
+
+    # check tags are valid
+    if from_tag not in tag_list:
+        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
+
+    # Check local repo has .git data 
+    if local_repo_path:
+        if os.path.isdir(os.path.join(local_repo_path, '.git')):
+            local_repo_path = os.path.abspath(local_repo_path)
+        else:
+            logger.warning(f'local_repo_path: ".git" folder not found in {local_repo_path}, fallback to fresh clone')
+            local_repo_path = None
+
+    # Create release notes 
+    repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
+    release_notes = noteBuilder.create_changelog(repo_data, format_markdown=True)
+    release_notes += noteBuilder.create_release_notes(repo_data)
+    logger.info("RELEASE NOTES OUTPUT: \n" +  "".join(release_notes))
+
+    # Write lines to target file 
+    release_notes_path = os.path.abspath(output_path)
+    with open(release_notes_path, 'w+') as rn:
+        header = [f'{repo} {to_tag} \n']
+        header.append( (len(header[0])-1) * '='+'\n')
+        header.append('\n')
+        rn.writelines(header + release_notes)
+        logger.info(f'Written Release notes to new file: "{release_notes_path}"')
+
 
 
 @cli.command()
