@@ -380,8 +380,8 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     # check tags are valid
     if from_tag not in tag_list:
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
-    if to_tag not in tag_list:
-        raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository, \nValid options: {tag_list}")
+    #if to_tag not in tag_list:
+    #    raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository, \nValid options: {tag_list}")
 
     # Check local repo has .git data 
     if local_repo_path:
