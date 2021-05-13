@@ -241,7 +241,7 @@ class ReleaseNotesBuilder(object):
         """
         changelog_lines = []
         if format_markdown:
-            changelog_lines.append('## [{} - changelog]({}/compare/{}...{})'.format(
+            changelog_lines.append('## Changelog - [{}]({}/compare/{}...{})'.format(
                 github_data['tag_to'],
                 github_data["url"],
                 github_data['tag_from'],
@@ -386,8 +386,6 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     # check tags are valid
     if from_tag not in tag_list:
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
-    #if to_tag not in tag_list:
-    #    raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository, \nValid options: {tag_list}")
 
     # Check local repo has .git data 
     if local_repo_path:
@@ -460,10 +458,7 @@ def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_
     # Write lines to target file 
     release_notes_path = os.path.abspath(output_path)
     with open(release_notes_path, 'w+') as rn:
-        header = [f'{repo} {to_tag} \n']
-        header.append( (len(header[0])-1) * '='+'\n')
-        header.append('\n')
-        rn.writelines(header + release_notes)
+        rn.writelines(release_notes)
         logger.info(f'Written Release notes to new file: "{release_notes_path}"')
 
 
