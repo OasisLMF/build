@@ -276,7 +276,7 @@ class ReleaseNotesBuilder(object):
         self.logger.info("CHANGELOG OUTPUT: \n" +  "".join(changelog_lines))
         return changelog_lines
 
-    def release_header(self, tag_platform=None, tag_oasislmf=None, tag_oasisui=None, tag_ktools=None):
+    def release_plat_header(self, tag_platform=None, tag_oasislmf=None, tag_oasisui=None, tag_ktools=None):
         """
         """
         t_plat = tag_platform if tag_platform else self._get_tag('OasisPlatform')
@@ -323,31 +323,24 @@ class ReleaseNotesBuilder(object):
                 if len(release_desc.strip()) < 1:
                     # skip PR if tags contain an empty string
                     continue
-                release_note_content.append(release_desc)
-                has_content = True
 
+                release_note_content.append(release_desc.strip())
+                release_note_content.append('\n\n')
+
+                has_content = True
         return has_content, release_note_content
 
-
-
-    def create_release_notes(self,  platform_data={}, oasislmf_data={}, ktools_data={}, oasisui_data={}):
-        """ Main release notes page (Only used for OasisPlatform)
+    def create_release_notes(self,  github_data):
+        """ release notes 
         """
-        release_notes = self.release_header(
-            tag_platform=platform_data.get('tag_to'),
-            tag_oasislmf=oasislmf_data.get('tag_to'),
-            tag_ktools=ktools_data.get('tag_to'),
-            tag_oasisui=oasisui_data.get('tag_to'),
-        )
-        for repo in [platform_data, oasislmf_data, ktools_data]:
-            has_notes, pr_notes = self.extract_pr_content(repo)
-            if has_notes:
-                release_notes.append('## {} Notes\r\n'.format(repo.get('name')))
-                release_notes += pr_notes + ['\r\n']
+        release_notes = []
+        has_notes, pr_notes = self.extract_pr_content(github_data)
+        if has_notes:
+            release_notes = ['\n\n']
+            release_notes.append('## {} Notes\n\n'.format(github_data.get('name')))
+            release_notes += pr_notes + ['\n\n']
 
-        self.logger.info("RELEASE NOTES OUTPUT: \n" +  "".join(release_notes))
         return release_notes
-
 
 
 @click.group()
@@ -419,6 +412,18 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
             cl.writelines(header + changelog_data)
             logger.info(f'Written Changelog to new file: "{changelog_path}"')
 
+
+@cli.command()
+@click.option('--repo',         type=click.Choice(['ktools', 'OasisLMF', 'OasisUI'], case_sensitive=True), required=True)
+@click.option('--output-path',  type=click.Path(exists=False), default='./RELEASE.md', help='Release notes output path')
+@click.option('--local-repo-path',  type=click.Path(exists=False), default=None, help=' Path to local git repository, used to skip clone step (optional) ')
+@click.option('--from-tag',     required=True, help='Github tag to track changes from' )
+@click.option('--to-tag',       required=True, help='Github tag to track changes to')
+@click.option('--github-token', default=None, help='Github OAuth token')
+def build_release():
+    pass
+
+
 @cli.command()
 @click.option('--platform-from-tag', default=None, help='Github tag to track changes from' )
 @click.option('--platform-to-tag',   default=None, help='Github tag to track changes to')
@@ -427,16 +432,19 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
 @click.option('--lmf-from-tag',      default=None, help='Github tag to track changes from' )
 @click.option('--lmf-to-tag',        default=None, help='Github tag to track changes to')
 @click.option('--github-token',      default=None, help='Github OAuth token')
-@click.option('--output-path',       type=click.Path(exists=False), default='./RELEASE.md', help='changelog output path')
-def build_release_notes(platform_from_tag,
-                        platform_to_tag ,
-                        ktools_from_tag,
-                        ktools_to_tag,
-                        lmf_from_tag,
-                        lmf_to_tag,
-                        github_token,
-                        output_path):
+@click.option('--output-path',       type=click.Path(exists=False), default='./RELEASE.md', help='Release notes output path')
+def build_release_platform(platform_from_tag,
+                           platform_to_tag ,
+                           ktools_from_tag,
+                           ktools_to_tag,
+                           lmf_from_tag,
+                           lmf_to_tag,
+                           github_token,
+                           output_path):
 
+    """
+    Create the OasisPlatform release notes 
+    """
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
     plat_from   = platform_from_tag if platform_from_tag else noteBuilder._get_tag(repo_name='OasisPlatform', idx=1)
@@ -445,16 +453,27 @@ def build_release_notes(platform_from_tag,
     lmf_to      = lmf_to_tag if lmf_to_tag               else noteBuilder._get_tag(repo_name='OasisLMF', idx=0)
     ktools_from = ktools_from_tag if ktools_from_tag     else noteBuilder._get_tag(repo_name='ktools', idx=1)
     ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0)
+    ui_to = noteBuilder._get_tag(repo_name='ktools', idx=0)
 
+    # Print docker images and components 
+    release_notes_data = noteBuilder.release_plat_header(
+        tag_platform=plat_to,
+        tag_oasislmf=lmf_to,
+        tag_ktools=ktools_to,
+        tag_oasisui=ui_to)
+
+    # Load github data 
     plat_data = noteBuilder.load_data(repo_name='OasisPlatform', tag_from=plat_from, tag_to=plat_to)
     lmf_data = noteBuilder.load_data(repo_name='OasisLMF',       tag_from=lmf_from, tag_to=lmf_to)
     ktools_data = noteBuilder.load_data(repo_name='ktools',      tag_from=ktools_from, tag_to=ktools_to)
 
-    release_notes_data = noteBuilder.create_release_notes(
-        platform_data=plat_data,
-        oasislmf_data=lmf_data,
-        ktools_data=ktools_data)
+    # Extract Feature notes from PR's 
+    release_notes_data += noteBuilder.create_release_notes(plat_data)
+    release_notes_data += noteBuilder.create_release_notes(lmf_data)
+    release_notes_data += noteBuilder.create_release_notes(ktools_data)
+    logger.info("RELEASE NOTES OUTPUT: \n" +  "".join(release_notes_data))
 
+    # Write lines to target file 
     release_notes_path = os.path.abspath(output_path)
     with open(release_notes_path, 'w+') as rn:
         header = [f'Oasis Release Notes v{plat_to} \n']
