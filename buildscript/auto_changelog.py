@@ -28,6 +28,13 @@ class ReleaseNotesBuilder(object):
     'pip install github pydriller click'
     """
     def __init__(self, github_token=None, github_user='OasisLMF'):
+        """
+        :param github_token: Github Oauth Token 
+        :type  github_token: str
+
+        :param github_user: Github user (for repo url)
+        :type  github_user: str
+        """
         self.github_token = github_token
         self.github_user = github_user
         self.logger = logging.getLogger()
@@ -37,31 +44,47 @@ class ReleaseNotesBuilder(object):
         else:
             self.gh_headers = {}
 
-    def _get_commit_refs(self, repo_url, from_tag, to_tag):
-        """ find all commits between the two tags [`tag_start` .. `tag_end`]
-            Extract any text from the commit message showing a github tag reference `#{number}`
-            and return a set of ints
+    def _get_commit_refs(self, repo_url, local_path, from_tag, to_tag):
+        """ 
+        Scan all commits between the two tags [`tag_start` .. `tag_end`]
+        Extract any text from the commit message showing a github tag reference `#{number}`
+        and return a list of ints
 
-            until checked with the GitHub API, its not known if these refs are to pull requests, issues or just typos
+        :param repo_url: GitHub URL, used for finding issues/Pull requests 
+        :type  repo_url: str 
 
-            commit_list = ['#772', '#774', .. , '#811']
-            return = {772, 774, .. ,811}
+        :param local_path: (Optional) path to scan a local repository and cross reference with GitHub 
+        :type  local_path: Path 
+
+        :param from_tag: Git Start Tag
+        :type  from_tag: str 
+
+        :param to_tag: Git end tag 
+        :type  to_tag: str 
+
+        :return: Github rife references 
+        :rtype:  List of ints 
         """
         self.logger.info("Fetching commits between tags {}...{} ".format(from_tag, to_tag))
 
-        repo = RepositoryMining(repo_url, from_tag=from_tag, to_tag=to_tag)
+        if local_path:
+            repo = RepositoryMining(local_path, from_tag=from_tag, to_tag=to_tag)
+        else:    
+            repo = RepositoryMining(repo_url, from_tag=from_tag, to_tag=to_tag)
+
         commit_list = [re.findall(r'#\d+', commit.msg) for commit in repo.traverse_commits()]
         commit_list = sum(commit_list, [])
         return set(map(lambda cm: int(cm[1:]), commit_list))
 
 
     def _get_github_pull_requests(self, github, commit_refs):
-        """ All pull requests have issues but not all issue have pull requests
+        """ 
+        All pull requests have issues but not all issue have pull requests
 
-            calling Issue(id).as_pull_request() will return the PR details 'if it exisits'
-            otherwise will rasie 'UnknownObjectException' 404
+        calling Issue(id).as_pull_request() will return the PR details 'if it exisits'
+        otherwise will rasie 'UnknownObjectException' 404
 
-            This filters out non-PR references
+        This filters out non-PR references
         """
         pull_requeusts = []
         for ref in commit_refs:
@@ -75,8 +98,9 @@ class ReleaseNotesBuilder(object):
 
 
     def _get_linked_issues(self, pr_number, repo_url):
-        """ there is no direct way to find which issues are linked to a PR via the github API (yet)
-            for the moment this func scraps github using `BeautifulSoup`
+        """ 
+        there is no direct way to find which issues are linked to a PR via the github API (yet)
+        for the moment this func scraps github using `BeautifulSoup`
         """
         r = requests.get(f"{repo_url}/pull/{pr_number}")
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -131,7 +155,7 @@ class ReleaseNotesBuilder(object):
             return -1
 
 
-    def load_data(self, repo_name, tag_from=None, tag_to=None):
+    def load_data(self, repo_name, local_path=None, tag_from=None, tag_to=None):
         """
         {
             'name': 'OasisLMF',
@@ -167,7 +191,7 @@ class ReleaseNotesBuilder(object):
 
         # Search commits for PR references
         repo_url = f'https://github.com/{self.github_user}/{repo_name}'
-        all_refs = self._get_commit_refs(repo_url, tag_from, tag_to)
+        all_refs = self._get_commit_refs(repo_url, local_path, tag_from, tag_to)
         pull_reqs = self._get_github_pull_requests(github, all_refs)
 
         pull_requests = list()
@@ -342,11 +366,12 @@ def check_rate_limit(github_token):
 @cli.command()
 @click.option('--repo',         type=click.Choice(['ktools', 'OasisLMF', 'OasisPlatform', 'OasisUI'], case_sensitive=True), required=True)
 @click.option('--output-path',  type=click.Path(exists=False), default='./CHANGELOG.rst', help='changelog output path')
+@click.option('--local-repo-path',  type=click.Path(exists=False), default=None, help=' Path to local git repository, used to skip clone step (optional) ')
 @click.option('--from-tag',     required=True, help='Github tag to track changes from' )
 @click.option('--to-tag',       required=True, help='Github tag to track changes to')
 @click.option('--github-token', default=None, help='Github OAuth token')
 @click.option('--apply-milestone', is_flag=True, help='Add issues to Github milestone, (requires Github OAuth token)')
-def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_milestone):
+def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_milestone, local_repo_path):
     # Setup
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
@@ -358,8 +383,17 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     if to_tag not in tag_list:
         raise click.BadParameter(f"to_tag={to_tag}, not found in the {repo} Repository, \nValid options: {tag_list}")
 
+    # Check local repo has .git data 
+    if local_repo_path:
+        if os.path.isdir(os.path.join(local_repo_path, '.git')):
+            local_repo_path = os.path.abspath(local_repo_path)
+        else:
+            logger.warning(f'local_repo_path: ".git" folder not found in {local_repo_path}, fallback to fresh clone')
+            local_repo_path = None
+
+
     # Create changelog
-    repo_data = noteBuilder.load_data(repo_name=repo, tag_from=from_tag, tag_to=to_tag)
+    repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
     changelog_data =  noteBuilder.create_changelog(repo_data)
     changelog_path = os.path.abspath(output_path)
 
