@@ -29,7 +29,7 @@ class ReleaseNotesBuilder(object):
     """
     def __init__(self, github_token=None, github_user='OasisLMF'):
         """
-        :param github_token: Github Oauth Token 
+        :param github_token: Github Oauth Token
         :type  github_token: str
 
         :param github_user: Github user (for repo url)
@@ -45,31 +45,31 @@ class ReleaseNotesBuilder(object):
             self.gh_headers = {}
 
     def _get_commit_refs(self, repo_url, local_path, from_tag, to_tag):
-        """ 
+        """
         Scan all commits between the two tags [`tag_start` .. `tag_end`]
         Extract any text from the commit message showing a github tag reference `#{number}`
         and return a list of ints
 
-        :param repo_url: GitHub URL, used for finding issues/Pull requests 
-        :type  repo_url: str 
+        :param repo_url: GitHub URL, used for finding issues/Pull requests
+        :type  repo_url: str
 
-        :param local_path: (Optional) path to scan a local repository and cross reference with GitHub 
-        :type  local_path: Path 
+        :param local_path: (Optional) path to scan a local repository and cross reference with GitHub
+        :type  local_path: Path
 
         :param from_tag: Git Start Tag
-        :type  from_tag: str 
+        :type  from_tag: str
 
-        :param to_tag: Git end tag 
-        :type  to_tag: str 
+        :param to_tag: Git end tag
+        :type  to_tag: str
 
-        :return: Github rife references 
-        :rtype:  List of ints 
+        :return: Github rife references
+        :rtype:  List of ints
         """
         self.logger.info("Fetching commits between tags {}...{} ".format(from_tag, to_tag))
 
         if local_path:
             repo = RepositoryMining(local_path, from_tag=from_tag, to_tag=to_tag)
-        else:    
+        else:
             repo = RepositoryMining(repo_url, from_tag=from_tag, to_tag=to_tag)
 
         commit_list = [re.findall(r'#\d+', commit.msg) for commit in repo.traverse_commits()]
@@ -78,7 +78,7 @@ class ReleaseNotesBuilder(object):
 
 
     def _get_github_pull_requests(self, github, commit_refs):
-        """ 
+        """
         All pull requests have issues but not all issue have pull requests
 
         calling Issue(id).as_pull_request() will return the PR details 'if it exisits'
@@ -98,16 +98,22 @@ class ReleaseNotesBuilder(object):
 
 
     def _get_linked_issues(self, pr_number, repo_url):
-        """ 
+        """
         there is no direct way to find which issues are linked to a PR via the github API (yet)
         for the moment this func scraps github using `BeautifulSoup`
         """
+
+        issue_urls_found = []
         r = requests.get(f"{repo_url}/pull/{pr_number}")
         soup = BeautifulSoup(r.text, 'html.parser')
         issueForm = soup.find("form", { "aria-label": re.compile('Link issues')})
-        issue_urls_found = [ re.findall(r'\d+', i["href"]) for i in issueForm.find_all("a")]
-        issue_refs = sum(issue_urls_found, [])
 
+        try:
+            issue_urls_found = [ re.findall(r'\d+', i["href"]) for i in issueForm.find_all("a")]
+        except Exception as e:
+            self.logger.warning(f"Error fetching linked issue for PR-{pr_number}, {e}")
+
+        issue_refs = sum(issue_urls_found, [])
         self.logger.info("PR-{} linked issues: {}".format(pr_number, issue_refs))
         return set(map(int, issue_refs))
 
@@ -237,7 +243,7 @@ class ReleaseNotesBuilder(object):
     def create_changelog(self, github_data, format_markdown=False):
         """ Extract Changelog data from github info `see self.load_data()`
 
-            `format_markdown`: format as markdown for release notes 
+            `format_markdown`: format as markdown for release notes
         """
         changelog_lines = []
         if format_markdown:
@@ -246,7 +252,7 @@ class ReleaseNotesBuilder(object):
                 github_data["url"],
                 github_data['tag_from'],
                 github_data['tag_to']))
-        else:    
+        else:
             # Add RST style header
             changelog_lines.append('`{}`_'.format(github_data['tag_to']))
             changelog_lines.append(' ---------')
@@ -277,7 +283,7 @@ class ReleaseNotesBuilder(object):
                 ))
 
         if not format_markdown:
-            # Add RST github compare link 
+            # Add RST github compare link
             changelog_lines.append(".. _`{}`:  {}/compare/{}...{}".format(
                 github_data['tag_to'],
                 github_data["url"],
@@ -344,7 +350,7 @@ class ReleaseNotesBuilder(object):
         return has_content, release_note_content
 
     def create_release_notes(self,  github_data):
-        """ release notes 
+        """ release notes
         """
         release_notes = []
         has_notes, pr_notes = self.extract_pr_content(github_data)
@@ -387,7 +393,7 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     if from_tag not in tag_list:
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
 
-    # Check local repo has .git data 
+    # Check local repo has .git data
     if local_repo_path:
         if os.path.isdir(os.path.join(local_repo_path, '.git')):
             local_repo_path = os.path.abspath(local_repo_path)
@@ -441,7 +447,7 @@ def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_
     if from_tag not in tag_list:
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
 
-    # Check local repo has .git data 
+    # Check local repo has .git data
     if local_repo_path:
         if os.path.isdir(os.path.join(local_repo_path, '.git')):
             local_repo_path = os.path.abspath(local_repo_path)
@@ -449,13 +455,13 @@ def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_
             logger.warning(f'local_repo_path: ".git" folder not found in {local_repo_path}, fallback to fresh clone')
             local_repo_path = None
 
-    # Create release notes 
+    # Create release notes
     repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
     release_notes = noteBuilder.create_changelog(repo_data, format_markdown=True)
     release_notes += noteBuilder.create_release_notes(repo_data)
     logger.info("RELEASE NOTES OUTPUT: \n" +  "".join(release_notes))
 
-    # Write lines to target file 
+    # Write lines to target file
     release_notes_path = os.path.abspath(output_path)
     with open(release_notes_path, 'w+') as rn:
         rn.writelines(release_notes)
@@ -482,7 +488,7 @@ def build_release_platform(platform_from_tag,
                            output_path):
 
     """
-    Create the OasisPlatform release notes 
+    Create the OasisPlatform release notes
     """
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
@@ -494,25 +500,25 @@ def build_release_platform(platform_from_tag,
     ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0)
     ui_to = noteBuilder._get_tag(repo_name='ktools', idx=0)
 
-    # Print docker images and components 
+    # Print docker images and components
     release_notes_data = noteBuilder.release_plat_header(
         tag_platform=plat_to,
         tag_oasislmf=lmf_to,
         tag_ktools=ktools_to,
         tag_oasisui=ui_to)
 
-    # Load github data 
+    # Load github data
     plat_data = noteBuilder.load_data(repo_name='OasisPlatform', tag_from=plat_from, tag_to=plat_to)
     lmf_data = noteBuilder.load_data(repo_name='OasisLMF',       tag_from=lmf_from, tag_to=lmf_to)
     ktools_data = noteBuilder.load_data(repo_name='ktools',      tag_from=ktools_from, tag_to=ktools_to)
 
-    # Extract Feature notes from PR's 
+    # Extract Feature notes from PR's
     release_notes_data += noteBuilder.create_release_notes(plat_data)
     release_notes_data += noteBuilder.create_release_notes(lmf_data)
     release_notes_data += noteBuilder.create_release_notes(ktools_data)
     logger.info("RELEASE NOTES OUTPUT: \n" +  "".join(release_notes_data))
 
-    # Write lines to target file 
+    # Write lines to target file
     release_notes_path = os.path.abspath(output_path)
     with open(release_notes_path, 'w+') as rn:
         header = [f'Oasis Release Notes v{plat_to} \n']
