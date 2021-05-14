@@ -15,6 +15,9 @@ except:
     from pydriller import Repository as RepositoryMining
 logging.basicConfig(level=logging.INFO)
 
+## extract text between markers in Pull requesuts
+START_PR_MARKER = '<!--start_release_notes-->\r\n'
+END_PR_MARKER = '<!--end_release_notes-->'
 
 class ReleaseNotesBuilder(object):
     """ NOTES
@@ -163,6 +166,9 @@ class ReleaseNotesBuilder(object):
 
     def load_data(self, repo_name, local_path=None, tag_from=None, tag_to=None):
         """
+        Create a dict of PyGithub objects based on the references found in commit
+        messages
+
         {
             'name': 'OasisLMF',
             'url': 'https://github.com/OasisLMF/OasisLMF'
@@ -219,6 +225,11 @@ class ReleaseNotesBuilder(object):
         }
 
     def create_milestones(self, github_data):
+        """
+        Scan all issues and pull requests in a `github_data` dict from `self.load_data(...)`
+        and Link them into a github milestone for that release
+        """
+
         # Load repository data (is needed?)
         repo_name = github_data.get('name')
         github = Github(login_or_token=self.github_token).get_repo(f'{self.github_user}/{repo_name}')
@@ -241,9 +252,9 @@ class ReleaseNotesBuilder(object):
                 self.logger.info(f'Issue #{issue.number}, added to milestone "{milestone.title}"')
 
     def create_changelog(self, github_data, format_markdown=False):
-        """ Extract Changelog data from github info `see self.load_data()`
-
-            `format_markdown`: format as markdown for release notes
+        """
+        Extract Changelog data from github info `see self.load_data()`
+        `format_markdown`: format as markdown for release notes
         """
         changelog_lines = []
         if format_markdown:
@@ -297,6 +308,7 @@ class ReleaseNotesBuilder(object):
 
     def release_plat_header(self, tag_platform=None, tag_oasislmf=None, tag_oasisui=None, tag_ktools=None):
         """
+        Create the header for the OasisPlatform release notes
         """
         t_plat = tag_platform if tag_platform else self._get_tag('OasisPlatform')
         t_lmf = tag_oasislmf if tag_oasislmf else self._get_tag('OasisLMF')
@@ -322,9 +334,8 @@ class ReleaseNotesBuilder(object):
 
     def extract_pr_content(self, github_data):
         """
+        Extract release note text between two markers in the Pull_request's body
         """
-        START = '<!--start_release_notes-->\r\n'
-        END = '<!--end_release_notes-->'
         release_note_content = []
         has_content = False
 
@@ -332,13 +343,13 @@ class ReleaseNotesBuilder(object):
             for pr in github_data.get('pull_requests'):
                 pr_body = pr['pull_request'].body
 
-                idx_start = pr_body.find(START)
-                idx_end = pr_body.rfind(END)
+                idx_start = pr_body.find(START_PR_MARKER)
+                idx_end = pr_body.rfind(END_PR_MARKER)
                 if (idx_start == -1 or idx_end == -1):
                     # skip PR if release note tags are missing
                     continue
 
-                release_desc = pr_body[idx_start+len(START):idx_end]
+                release_desc = pr_body[idx_start+len(START_PR_MARKER):idx_end]
                 if len(release_desc.strip()) < 1:
                     # skip PR if tags contain an empty string
                     continue
