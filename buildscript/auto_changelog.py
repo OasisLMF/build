@@ -508,7 +508,7 @@ def build_release_platform(platform_from_tag,
     lmf_to      = lmf_to_tag if lmf_to_tag               else noteBuilder._get_tag(repo_name='OasisLMF', idx=0)
     ktools_from = ktools_from_tag if ktools_from_tag     else noteBuilder._get_tag(repo_name='ktools', idx=1)
     ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0)
-    ui_to = noteBuilder._get_tag(repo_name='ktools', idx=0)
+    ui_to = noteBuilder._get_tag(repo_name='OasisUI', idx=0)
 
     # Print docker images and components
     release_notes_data = noteBuilder.release_plat_header(
