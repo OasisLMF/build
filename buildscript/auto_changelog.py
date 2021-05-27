@@ -107,11 +107,10 @@ class ReleaseNotesBuilder(object):
         """
 
         issue_urls_found = []
-        r = requests.get(f"{repo_url}/pull/{pr_number}")
-        soup = BeautifulSoup(r.text, 'html.parser')
-        issueForm = soup.find("form", { "aria-label": re.compile('Link issues')})
-
         try:
+            r = requests.get(f"{repo_url}/pull/{pr_number}")
+            soup = BeautifulSoup(r.text, 'html.parser')
+            issueForm = soup.find("form", { "aria-label": re.compile('Link issues')})
             issue_urls_found = [ re.findall(r'\d+', i["href"]) for i in issueForm.find_all("a")]
         except Exception as e:
             self.logger.warning(f"Error fetching linked issue for PR-{pr_number}, {e}")
