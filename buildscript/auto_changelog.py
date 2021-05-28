@@ -256,16 +256,19 @@ class ReleaseNotesBuilder(object):
         `format_markdown`: format as markdown for release notes
         """
         changelog_lines = []
-        if format_markdown:
-            changelog_lines.append('## Changelog - [{}]({}/compare/{}...{})'.format(
-                github_data['tag_to'],
-                github_data["url"],
-                github_data['tag_from'],
-                github_data['tag_to']))
-        else:
-            # Add RST style header
-            changelog_lines.append('`{}`_'.format(github_data['tag_to']))
-            changelog_lines.append(' ---------')
+        # Add header if at least one PR is found
+        if len(github_data['pull_requests']) > 1:
+            if format_markdown:
+                changelog_lines.append('## {} Changelog - [{}]({}/compare/{}...{})'.format(
+                    github_data['name'],
+                    github_data['tag_to'],
+                    github_data["url"],
+                    github_data['tag_from'],
+                    github_data['tag_to']))
+            else:
+                # Add RST style header
+                changelog_lines.append('`{}`_'.format(github_data['tag_to']))
+                changelog_lines.append(' ---------')
 
         # Check that at least one Pull request has been picked up
         for pr in github_data['pull_requests']:
@@ -348,13 +351,25 @@ class ReleaseNotesBuilder(object):
                     # skip PR if release note tags are missing
                     continue
 
-                release_desc = pr_body[idx_start+len(START_PR_MARKER):idx_end]
-                if len(release_desc.strip()) < 1:
+                release_desc = pr_body[idx_start+len(START_PR_MARKER):idx_end].strip()
+                if len(release_desc) < 1:
                     # skip PR if tags contain an empty string
                     continue
 
-                release_note_content.append(release_desc.strip())
-                release_note_content.append('\n\n')
+                # Add PR link to title
+                if release_desc[:3].startswith('###'):
+                    pr_link = " - [(PR #{})]({})".format(
+                        pr['pull_request'].number,
+                        pr['pull_request'].html_url)
+                    title = [release_desc.split('\r\n')[0] + pr_link]
+                    body = release_desc.split('\r\n')[1:]
+                    release_note_content.append("\r\n".join(title + body) )
+                    release_note_content.append('\n\n')
+                else:
+                    release_note_content.append(release_desc)
+                    release_note_content.append('\n\n')
+
+
 
                 has_content = True
         return has_content, release_note_content
@@ -510,19 +525,31 @@ def build_release_platform(platform_from_tag,
     ktools_to   = ktools_to_tag if ktools_to_tag         else noteBuilder._get_tag(repo_name='ktools', idx=0)
     ui_to = noteBuilder._get_tag(repo_name='OasisUI', idx=0)
 
-    # Print docker images and components
-    release_notes_data = noteBuilder.release_plat_header(
-        tag_platform=plat_to,
-        tag_oasislmf=lmf_to,
-        tag_ktools=ktools_to,
-        tag_oasisui=ui_to)
-
     # Load github data
     plat_data = noteBuilder.load_data(repo_name='OasisPlatform', tag_from=plat_from, tag_to=plat_to)
     lmf_data = noteBuilder.load_data(repo_name='OasisLMF',       tag_from=lmf_from, tag_to=lmf_to)
     ktools_data = noteBuilder.load_data(repo_name='ktools',      tag_from=ktools_from, tag_to=ktools_to)
 
+    # Add title
+    release_notes_data = [f'Oasis Release v{plat_to} \n']
+    release_notes_data.append((len(release_notes_data[0])-1) * '='+'\n')
+    release_notes_data.append('\n')
+
+    # Print docker images and components
+    release_notes_data += noteBuilder.release_plat_header(
+        tag_platform=plat_to,
+        tag_oasislmf=lmf_to,
+        tag_ktools=ktools_to,
+        tag_oasisui=ui_to)
+
+    # Load Change logs
+    release_notes_data += ["# Changelogs \n", "\n"]
+    release_notes_data += noteBuilder.create_changelog(plat_data,   format_markdown=True)
+    release_notes_data += noteBuilder.create_changelog(lmf_data,    format_markdown=True)
+    release_notes_data += noteBuilder.create_changelog(ktools_data, format_markdown=True)
+
     # Extract Feature notes from PR's
+    release_notes_data += ["# Release Notes"]
     release_notes_data += noteBuilder.create_release_notes(plat_data)
     release_notes_data += noteBuilder.create_release_notes(lmf_data)
     release_notes_data += noteBuilder.create_release_notes(ktools_data)
@@ -531,10 +558,7 @@ def build_release_platform(platform_from_tag,
     # Write lines to target file
     release_notes_path = os.path.abspath(output_path)
     with open(release_notes_path, 'w+') as rn:
-        header = [f'Oasis Release Notes v{plat_to} \n']
-        header.append( (len(header[0])-1) * '='+'\n')
-        header.append('\n')
-        rn.writelines(header + release_notes_data)
+        rn.writelines(release_notes_data)
         logger.info(f'Written Release notes to new file: "{release_notes_path}"')
 
 if __name__ == '__main__':
