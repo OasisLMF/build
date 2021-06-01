@@ -152,7 +152,7 @@ class ReleaseNotesBuilder(object):
         """ return milestone number if title matches, return '-1' if not found
         """
         resp = requests.get(
-            f'https://api.github.com/repos/{self.github_user}/{repo_name}/milestones',
+            f'https://api.github.com/repos/{self.github_user}/{repo_name}/milestones?per_page=100',
             headers=self.gh_headers)
 
         resp.raise_for_status()
@@ -228,7 +228,6 @@ class ReleaseNotesBuilder(object):
         Scan all issues and pull requests in a `github_data` dict from `self.load_data(...)`
         and Link them into a github milestone for that release
         """
-
         # Load repository data (is needed?)
         repo_name = github_data.get('name')
         github = Github(login_or_token=self.github_token).get_repo(f'{self.github_user}/{repo_name}')
@@ -236,7 +235,7 @@ class ReleaseNotesBuilder(object):
         milestone_num = self._find_milestone(github_data.get('name'), milestone_title)
 
         # Get or Create milestone
-        if milestone_num < 0:
+        if milestone_num == -1:
             milestone = github.create_milestone(milestone_title)
         else:
             milestone = github.get_milestone(milestone_num)
