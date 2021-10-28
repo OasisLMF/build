@@ -230,9 +230,9 @@ set_vers_oasislmf(){
 commit_vers_oasislmf(){
     # push incremented version number to git
     OASISLMF_VERS=$1
-    COMMIT_MSG="Upgrade to new version '${OASISLMF_VERS}'"
+    COMMIT_MSG="Set version '${OASISLMF_VERS}'"
     if [ $(git status | grep -c oasislmf/__init__.py) -eq 1 ]; then
-        git add ./oasislmf/__init__.py && git commit -m $COMMIT_MSG && git push origin
+        git add ./oasislmf/__init__.py && git commit -m "$COMMIT_MSG" && git push origin
     else
         echo 'no changes to commit'
     fi
