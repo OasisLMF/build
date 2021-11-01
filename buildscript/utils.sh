@@ -198,6 +198,27 @@ run_ui(){
     stop_oasis -f compose/oasis.ui.yml
 }
 
+
+# ods-tools python package
+sign_ods_tools(){
+    TAR_PKG=$(find ./dist/ -name "ods_tools-*.tar.gz")
+    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${TAR_PKG}"
+
+    WHL_LINUX=$(find ./dist/ -name "ods_tools-*.whl")
+    bash -c "echo ${PASSPHRASE} | gpg --batch --no-tty --passphrase-fd 0 --detach-sign -a ${WHL_LINUX}"
+}
+push_ods_tools(){
+    TAR_PKG=$(find ./dist/ -name "ods_tools-*.tar.gz")
+    /usr/local/bin/twine upload $TAR_PKG $TAR_PKG.asc
+
+    WHL_LINUX=$(find ./dist/ -name "ods_tools-*.whl")
+    /usr/local/bin/twine upload $WHL_LINUX $WHL_LINUX.asc
+
+    #WHL_OSX=$(find ./dist/ -name "oasislmf-*macosx_10_6_intel.whl")
+    #/usr/local/bin/twine upload $WHL_OSX $WHL_OSX.asc
+}
+
+
 # OasisLMF python package
 sign_oasislmf(){
     TAR_PKG=$(find ./dist/ -name "oasislmf-*.tar.gz")
