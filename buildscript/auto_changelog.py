@@ -18,6 +18,8 @@ logging.basicConfig(level=logging.INFO)
 ## extract text between markers in Pull requesuts
 START_PR_MARKER = '<!--start_release_notes-->\r\n'
 END_PR_MARKER = '<!--end_release_notes-->'
+DEFAULT_PR_TITLE = '### Release notes feature title'
+
 
 class ReleaseNotesBuilder(object):
     """ NOTES
@@ -353,6 +355,13 @@ class ReleaseNotesBuilder(object):
                 release_desc = pr_body[idx_start+len(START_PR_MARKER):idx_end].strip()
                 if len(release_desc) < 1:
                     # skip PR if tags contain an empty string
+                    continue
+                if DEFAULT_PR_TITLE in release_desc:
+                    # skip PR if default template title in text
+                    self.logger.info('Ignoring PR-{}, release notes have not been updated.  {}'.format(
+                        pr['pull_request'].number,
+                        pr['pull_request'].html_url
+                    ))
                     continue
 
                 # Add PR link to title
