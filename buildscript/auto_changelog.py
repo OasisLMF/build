@@ -209,18 +209,12 @@ class ReleaseNotesBuilder(object):
 
         pull_requests = list()
         for pr in pull_reqs:
-            if DEFAULT_PR_TITLE in pr.body:
-                self.logger.info('Ignoring PR-{}, release notes are missing.  {}'.format(
-                    pr.number,
-                    pr.html_url
-                ))
-            else:
-                linked_issues = self._get_linked_issues(pr.number, repo_url)
-                pull_requests.append({
-                    "id": pr.number,
-                    "pull_request": pr,
-                    "linked_issues": [github.get_issue(ref) for ref in linked_issues]
-                })
+            linked_issues = self._get_linked_issues(pr.number, repo_url)
+            pull_requests.append({
+                "id": pr.number,
+                "pull_request": pr,
+                "linked_issues": [github.get_issue(ref) for ref in linked_issues]
+            })
 
         self.logger.info("{} - Github data fetch complete".format(repo_name))
         return {
@@ -361,6 +355,13 @@ class ReleaseNotesBuilder(object):
                 release_desc = pr_body[idx_start+len(START_PR_MARKER):idx_end].strip()
                 if len(release_desc) < 1:
                     # skip PR if tags contain an empty string
+                    continue
+                if DEFAULT_PR_TITLE in release_desc:
+                    # skip PR if default template title in text  
+                    self.logger.info('Ignoring PR-{}, release notes are missing.  {}'.format(
+                        pr['pull_request'].number,
+                        pr['pull_request'].html_url
+                    ))
                     continue
 
                 # Add PR link to title
