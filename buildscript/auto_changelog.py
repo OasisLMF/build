@@ -18,6 +18,8 @@ logging.basicConfig(level=logging.INFO)
 ## extract text between markers in Pull requesuts
 START_PR_MARKER = '<!--start_release_notes-->\r\n'
 END_PR_MARKER = '<!--end_release_notes-->'
+DEFAULT_PR_TITLE = '### Release notes feature title'
+
 
 class ReleaseNotesBuilder(object):
     """ NOTES
@@ -207,12 +209,18 @@ class ReleaseNotesBuilder(object):
 
         pull_requests = list()
         for pr in pull_reqs:
-            linked_issues = self._get_linked_issues(pr.number, repo_url)
-            pull_requests.append({
-                "id": pr.number,
-                "pull_request": pr,
-                "linked_issues": [github.get_issue(ref) for ref in linked_issues]
-            })
+            if DEFAULT_PR_TITLE in pr.body:
+                self.logger.info('Ignoring PR-{}, release notes are missing.  {}'.format(
+                    pr.number,
+                    pr.html_url
+                ))
+            else:
+                linked_issues = self._get_linked_issues(pr.number, repo_url)
+                pull_requests.append({
+                    "id": pr.number,
+                    "pull_request": pr,
+                    "linked_issues": [github.get_issue(ref) for ref in linked_issues]
+                })
 
         self.logger.info("{} - Github data fetch complete".format(repo_name))
         return {
