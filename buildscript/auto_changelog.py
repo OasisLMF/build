@@ -357,8 +357,8 @@ class ReleaseNotesBuilder(object):
                     # skip PR if tags contain an empty string
                     continue
                 if DEFAULT_PR_TITLE in release_desc:
-                    # skip PR if default template title in text  
-                    self.logger.info('Ignoring PR-{}, release notes are missing.  {}'.format(
+                    # skip PR if default template title in text
+                    self.logger.info('Ignoring PR-{}, release notes have not been updated.  {}'.format(
                         pr['pull_request'].number,
                         pr['pull_request'].html_url
                     ))
