@@ -345,6 +345,8 @@ class ReleaseNotesBuilder(object):
         if github_data:
             for pr in github_data.get('pull_requests'):
                 pr_body = pr['pull_request'].body
+                if pr_body is None:
+                    continue
 
                 idx_start = pr_body.find(START_PR_MARKER)
                 idx_end = pr_body.rfind(END_PR_MARKER)
