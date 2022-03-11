@@ -153,7 +153,11 @@ run_test_s3(){
     timeout_val=28800
     local tester='docker-compose -f compose/s3.oasis.platform.yml -f compose/s3.model.worker.yml -f compose/model.tester.yml'
     eval ${tester}' up -d'
-    bash -c '''$tester logs -f --tail="all" worker | { sed "/Connected to amqp/ q" && kill -PIPE $$ ; }'  > /dev/null 2>&1
+    while ! $tester logs worker | grep -q "Connected to amqp";
+    do
+        sleep 1
+        echo 'Waiting for worker'
+    done
     eval "timeout $timeout_val "${tester}' run --rm --entrypoint="bash -c " model_tester "./runtest_S3 '"$@"'"'
 }
 
