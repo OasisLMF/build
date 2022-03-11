@@ -188,7 +188,7 @@ run_test(){
     local tester=' -f compose/model.tester.yml'
     eval $(compose_model)${tester}' up -d'
 
-    while ! $(compose_oasis)$tester logs worker | grep -q "Connected to amqp";
+    while ! $(compose_model)$tester logs worker | grep -q "Connected to amqp";
     do
         sleep 1
         echo 'Waiting for worker'
