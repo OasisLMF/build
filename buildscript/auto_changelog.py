@@ -140,6 +140,17 @@ class ReleaseNotesBuilder(object):
             tag_data = json.loads(resp.text)
             return tag_data[idx]['name']
 
+    def _tag_exists(self, repo_name, tag):
+        resp = requests.get(
+            f'https://github.com/{self.github_user}/{repo_name}/releases/tag/{tag}',
+            headers=self.gh_headers)
+        if resp.ok:
+            return True
+        elif resp.status_code == 404:
+            return False
+        else:
+            resp.raise_for_status()
+
     def _get_all_tags(self, repo_name):
         resp = requests.get(
             f'https://api.github.com/repos/{self.github_user}/{repo_name}/tags',
@@ -422,11 +433,10 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     # Setup
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
-    tag_list = noteBuilder._get_all_tags(repo)
 
     # check tags are valid
-    if from_tag not in tag_list:
-        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
+    if not noteBuilder._tag_exists(repo, from_tag):
+        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository")
 
     # Check local repo has .git data
     if local_repo_path:
@@ -476,11 +486,10 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
 def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_path):
     logger = logging.getLogger()
     noteBuilder = ReleaseNotesBuilder(github_token=github_token)
-    tag_list = noteBuilder._get_all_tags(repo)
 
     # check tags are valid
-    if from_tag not in tag_list:
-        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository \nValid options: {tag_list}")
+    if not noteBuilder._tag_exists(repo, from_tag):
+        raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository")
 
     # Check local repo has .git data
     if local_repo_path:
