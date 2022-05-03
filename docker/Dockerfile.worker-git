@@ -2,7 +2,7 @@ FROM coreoasis/model_worker:latest
 
 ARG BRANCH=develop
 
-RUN apt update && apt install -y git g++ build-essential libtool zlib1g-dev autoconf 
+RUN apt update && apt install -y git g++ build-essential libtool zlib1g-dev autoconf pkg-config
 
 RUN pip3 uninstall oasislmf -y
 RUN pip3 install -v git+https://git@github.com/OasisLMF/OasisLMF.git@${BRANCH:-develop}#egg=oasislmf
