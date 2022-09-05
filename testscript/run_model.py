@@ -193,7 +193,7 @@ def model_run_ok(model_run_dir, model_run_mode):
         else:
             substr, dir_name, dir_contents = os.path.basename(fp), os.path.dirname(fp), os.listdir(os.path.dirname(fp))
             try:
-                fn = [fn for fn in dir_contents if substr.lower() in fn.lower()][0]
+                fn = [fn for fn in dir_contents if substr in fn][0]
             except (AttributeError, IndexError):
                 print('False')
                 return False
