@@ -24,6 +24,7 @@ services:
      - OASIS_MODEL_DATA_DIRECTORY=/home/worker/model/  
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
+     - OASIS_DEBUG=True
     volumes:
      - ${OASIS_MODEL_REPO_DIR}:${MODEL_MOUNT_TARGET:-/home/worker/model}:rw
      - ${OASIS_MODEL_DATA_DIR}:${MODEL_DATA_TARGET:-/var/oasis/model_data}:rw

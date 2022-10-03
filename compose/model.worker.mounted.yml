@@ -24,6 +24,7 @@ services:
      - OASIS_OASISLMF_CONFIG=${MDK_CONFIG}  
      - OASIS_KEEP_RUN_DIR=True
      - OASIS_DEBUG_MODE=True
+     - OASIS_DEBUG=True
     volumes:
 #     - ./log:/var/log/oasis:rw
      - ${OASIS_MODEL_REPO_DIR}:/home/worker/model/:rw
