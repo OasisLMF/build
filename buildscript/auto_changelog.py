@@ -210,12 +210,22 @@ class ReleaseNotesBuilder(object):
             ]
         }
         """
+
+        # If 'local_path' is set test its valid 
+        if local_path is not None:
+            if os.path.isdir(os.path.join(repo_path, '.git')):
+                local_repo_path = os.path.abspath(repo_path)
+            else:
+                logger.warning(f'repo_path: ".git" folder not found in {repo_path}, fallback to fresh clone')
+                local_repo_path = None
+
+
         # Load repository data
         github = Github(login_or_token=self.github_token).get_repo(f'{self.github_user}/{repo_name}')
 
         # Search commits for PR references
         repo_url = f'https://github.com/{self.github_user}/{repo_name}'
-        all_refs = self._get_commit_refs(repo_url, local_path, tag_from, tag_to)
+        all_refs = self._get_commit_refs(repo_url, local_repo_path, tag_from, tag_to)
         pull_reqs = self._get_github_pull_requests(github, all_refs)
 
         pull_requests = list()
@@ -438,15 +448,6 @@ def build_changelog(repo, from_tag, to_tag, github_token, output_path, apply_mil
     if not noteBuilder._tag_exists(repo, from_tag):
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository")
 
-    # Check local repo has .git data
-    if local_repo_path:
-        if os.path.isdir(os.path.join(local_repo_path, '.git')):
-            local_repo_path = os.path.abspath(local_repo_path)
-        else:
-            logger.warning(f'local_repo_path: ".git" folder not found in {local_repo_path}, fallback to fresh clone')
-            local_repo_path = None
-
-
     # Create changelog
     repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
     changelog_data = noteBuilder.create_changelog(repo_data)
@@ -491,14 +492,6 @@ def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_
     if not noteBuilder._tag_exists(repo, from_tag):
         raise click.BadParameter(f"from_tag={from_tag}, not found in the {repo} Repository")
 
-    # Check local repo has .git data
-    if local_repo_path:
-        if os.path.isdir(os.path.join(local_repo_path, '.git')):
-            local_repo_path = os.path.abspath(local_repo_path)
-        else:
-            logger.warning(f'local_repo_path: ".git" folder not found in {local_repo_path}, fallback to fresh clone')
-            local_repo_path = None
-
     # Create release notes
     repo_data = noteBuilder.load_data(repo_name=repo, local_path=local_repo_path, tag_from=from_tag, tag_to=to_tag)
     release_notes = noteBuilder.create_changelog(repo_data, format_markdown=True)
@@ -514,20 +507,26 @@ def build_release(repo, from_tag, to_tag, github_token, output_path, local_repo_
 
 
 @cli.command()
+@click.option('--platform-repo-path',  type=click.Path(exists=False), default=None, help=' Path to local git repository, used to skip clone step (optional) ')
 @click.option('--platform-from-tag', default=None, help='Github tag to track changes from' )
 @click.option('--platform-to-tag',   default=None, help='Github tag to track changes to')
-@click.option('--ktools-from-tag',   default=None, help='Github tag to track changes from' )
-@click.option('--ktools-to-tag',     default=None, help='Github tag to track changes to')
+@click.option('--lmf-repo-path',  type=click.Path(exists=False), default=None, help=' Path to local git repository, used to skip clone step (optional) ')
 @click.option('--lmf-from-tag',      default=None, help='Github tag to track changes from' )
 @click.option('--lmf-to-tag',        default=None, help='Github tag to track changes to')
+@click.option('--ktools-repo-path',  type=click.Path(exists=False), default=None, help=' Path to local git repository, used to skip clone step (optional) ')
+@click.option('--ktools-from-tag',   default=None, help='Github tag to track changes from' )
+@click.option('--ktools-to-tag',     default=None, help='Github tag to track changes to')
 @click.option('--github-token',      default=None, help='Github OAuth token')
 @click.option('--output-path',       type=click.Path(exists=False), default='./RELEASE.md', help='Release notes output path')
-def build_release_platform(platform_from_tag,
+def build_release_platform(platform_repo_path,
+                           platform_from_tag,
                            platform_to_tag ,
-                           ktools_from_tag,
-                           ktools_to_tag,
+                           lmf_repo_path,
                            lmf_from_tag,
                            lmf_to_tag,
+                           ktools_repo_path,
+                           ktools_from_tag,
+                           ktools_to_tag,
                            github_token,
                            output_path):
 
@@ -545,9 +544,9 @@ def build_release_platform(platform_from_tag,
     ui_to = noteBuilder._get_tag(repo_name='OasisUI', idx=0)
 
     # Load github data
-    plat_data = noteBuilder.load_data(repo_name='OasisPlatform', tag_from=plat_from, tag_to=plat_to)
-    lmf_data = noteBuilder.load_data(repo_name='OasisLMF',       tag_from=lmf_from, tag_to=lmf_to)
-    ktools_data = noteBuilder.load_data(repo_name='ktools',      tag_from=ktools_from, tag_to=ktools_to)
+    plat_data = noteBuilder.load_data(repo_name='OasisPlatform', local_path=platform_repo_path, tag_from=plat_from, tag_to=plat_to)
+    lmf_data = noteBuilder.load_data(repo_name='OasisLMF', local_path=lmf_repo_path, tag_from=lmf_from, tag_to=lmf_to)
+    ktools_data = noteBuilder.load_data(repo_name='ktools', local_path=ktools_repo_path, tag_from=ktools_from, tag_to=ktools_to)
 
     # Add title
     release_notes_data = [f'Oasis Release v{plat_to} \n']
