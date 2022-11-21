@@ -211,13 +211,12 @@ class ReleaseNotesBuilder(object):
         }
         """
 
-        # If 'local_path' is set test its valid 
+        local_repo_path = None
         if local_path is not None:
-            if os.path.isdir(os.path.join(repo_path, '.git')):
-                local_repo_path = os.path.abspath(repo_path)
+            if os.path.isdir(os.path.join(local_path, '.git')):
+                local_repo_path = os.path.abspath(local_path)
             else:
                 logger.warning(f'repo_path: ".git" folder not found in {repo_path}, fallback to fresh clone')
-                local_repo_path = None
 
 
         # Load repository data
